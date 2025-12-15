@@ -1,21 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '../components/ui/button';
 import { Mail, Lock, User, Phone, UserPlus } from 'lucide-react';
 
 export default function RegisterPageClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const defaultRole = searchParams.get('role') === 'owner' ? 'OWNER' : 'PLAYER';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState(defaultRole);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +25,7 @@ export default function RegisterPageClient() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, password, role }),
+        body: JSON.stringify({ name, email, phone, password }),
       });
 
       const data = await res.json();
@@ -37,12 +34,7 @@ export default function RegisterPageClient() {
         throw new Error(data.error || 'حدث خطأ في التسجيل');
       }
 
-      // Redirect based on role
-      if (data.user.role === 'OWNER') {
-        router.push('/owner/dashboard');
-      } else {
-        router.push('/map');
-      }
+      router.push('/map');
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ');
@@ -65,34 +57,6 @@ export default function RegisterPageClient() {
           onSubmit={handleSubmit}
           className="bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-5"
         >
-          {/* Role Selection */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setRole('PLAYER')}
-              className={`p-4 rounded-xl border-2 transition-all text-center cursor-pointer ${
-                role === 'PLAYER'
-                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
-                  : 'border-slate-700 text-slate-400 hover:border-slate-600'
-              }`}
-            >
-              <div className="text-2xl mb-1">🎮</div>
-              <div className="font-medium">لاعب</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('OWNER')}
-              className={`p-4 rounded-xl border-2 transition-all text-center cursor-pointer ${
-                role === 'OWNER'
-                  ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                  : 'border-slate-700 text-slate-400 hover:border-slate-600'
-              }`}
-            >
-              <div className="text-2xl mb-1">🏟️</div>
-              <div className="font-medium">صاحب ملعب</div>
-            </button>
-          </div>
-
           <div>
             <label className="block text-slate-300 text-sm font-medium mb-2">الاسم الكامل</label>
             <div className="relative">

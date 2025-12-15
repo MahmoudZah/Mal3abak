@@ -17,7 +17,7 @@ model User {
   password  String
   name      String
   phone     String?
-  role      String   // PLAYER, OWNER
+  role      String   // PLAYER, OWNER, ADMIN
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

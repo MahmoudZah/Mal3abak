@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create user
+    // Create user - only PLAYER role allowed from public registration
+    // OWNER and ADMIN accounts are created by admins only
     const hashedPassword = await hashPassword(password)
     const user = await prisma.user.create({
       data: {
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         name,
         phone: phone || null,
-        role: role === 'OWNER' ? 'OWNER' : 'PLAYER',
+        role: 'PLAYER',
       }
     })
 

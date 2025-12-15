@@ -15,6 +15,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate slots are consecutive to prevent price manipulation
+    const sortedSlotsCheck = [...slots].sort((a: number, b: number) => a - b);
+    for (let i = 1; i < sortedSlotsCheck.length; i++) {
+      if (sortedSlotsCheck[i] - sortedSlotsCheck[i - 1] !== 1) {
+        return NextResponse.json(
+          { error: "يجب اختيار ساعات متتالية" },
+          { status: 400 }
+        );
+      }
+    }
+
     // If not logged in, require visitor info
     if (!user && (!visitorName || !visitorPhone)) {
       return NextResponse.json(

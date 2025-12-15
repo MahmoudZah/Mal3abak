@@ -11,6 +11,17 @@ async function main() {
   await prisma.session.deleteMany();
   await prisma.user.deleteMany();
 
+  // Create Admin user
+  await prisma.user.create({
+    data: {
+      email: "admin@mal3bak.com",
+      password: await hash("admin123456"),
+      name: "مدير المنصة",
+      phone: "01000000000",
+      role: "ADMIN",
+    },
+  });
+
   // Create Users with hashed passwords
   const player1 = await prisma.user.create({
     data: {
@@ -237,9 +248,11 @@ async function main() {
   });
 
   console.log("✅ Seeding finished successfully!");
+  console.log("");
   console.log("📧 Test accounts:");
-  console.log("   Player: ahmed@example.com / password123");
-  console.log("   Owner:  owner@example.com / password123");
+  console.log("   🔴 Admin:  admin@mal3bak.com / admin123456");
+  console.log("   🟢 Owner:  owner@example.com / password123");
+  console.log("   🔵 Player: ahmed@example.com / password123");
   console.log("");
   console.log("🏟️ Courts created:");
   console.log("   - نادي الشمس الرياضي (3 ملاعب)");
