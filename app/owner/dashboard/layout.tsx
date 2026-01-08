@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { OwnerTabs } from './OwnerTabs';
+import { OwnerLayoutClient } from './OwnerLayoutClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,9 +26,9 @@ export default async function OwnerDashboardLayout({
     <main className="min-h-screen bg-slate-950 flex flex-col">
       <Navbar />
       <OwnerTabs />
-      <div className="flex-1">
+      <OwnerLayoutClient>
         {children}
-      </div>
+      </OwnerLayoutClient>
       <Footer />
     </main>
   );

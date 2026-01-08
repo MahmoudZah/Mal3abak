@@ -13,7 +13,7 @@ export function Footer() {
           <div>
             <h4 className="text-slate-200 font-semibold mb-4">روابط سريعة</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="/map" className="hover:text-emerald-400 transition-colors">تصفح الملاعب</a></li>
+              <li><a href="/browse" className="hover:text-emerald-400 transition-colors">تصفح الملاعب</a></li>
               <li><a href="/register?role=owner" className="hover:text-emerald-400 transition-colors">سجل ملعبك</a></li>
               <li><a href="/about" className="hover:text-emerald-400 transition-colors">عن المنصة</a></li>
             </ul>

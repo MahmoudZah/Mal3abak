@@ -9,6 +9,6 @@ interface ExplorePageProps {
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const { search } = await searchParams;
   const q = (search || '').trim();
-  if (!q) redirect('/map');
-  redirect(`/map?search=${encodeURIComponent(q)}`);
+  if (!q) redirect('/browse');
+  redirect(`/browse?search=${encodeURIComponent(q)}`);
 }

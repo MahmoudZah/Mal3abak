@@ -13,6 +13,9 @@ import {
   Download,
   Building2,
   Filter as FilterIcon,
+  Image as ImageIcon,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import {
   format,
@@ -33,7 +36,9 @@ interface Reservation {
   startTime: string;
   endTime: string;
   totalPrice: number;
+  serviceFee: number;
   status: string;
+  paymentProof: string | null;
   visitorName: string | null;
   visitorPhone: string | null;
   user: { name: string; phone: string | null } | null;
@@ -80,6 +85,27 @@ export default function ReservationsClient({
   );
 
   const now = new Date();
+
+  // Handle status change (confirm/cancel reservation)
+  const handleStatusChange = async (reservationId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/reservations/${reservationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (res.ok) {
+        // Reload page to refresh data
+        window.location.reload();
+      } else {
+        alert("فشل في تحديث الحالة");
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      alert("حدث خطأ");
+    }
+  };
 
   // Filter reservations
   const filteredReservations = useMemo(() => {
@@ -556,7 +582,13 @@ export default function ReservationsClient({
                     السعر
                   </th>
                   <th className="text-right text-slate-400 text-sm font-medium p-4">
+                    إثبات الدفع
+                  </th>
+                  <th className="text-right text-slate-400 text-sm font-medium p-4">
                     الحالة
+                  </th>
+                  <th className="text-right text-slate-400 text-sm font-medium p-4">
+                    الإجراء
                   </th>
                 </tr>
               </thead>
@@ -629,6 +661,21 @@ export default function ReservationsClient({
                         {res.totalPrice.toLocaleString()} ج.م
                       </td>
                       <td className="p-4">
+                        {res.paymentProof ? (
+                          <a
+                            href={res.paymentProof}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors text-sm"
+                          >
+                            <ImageIcon className="w-4 h-4" />
+                            عرض
+                          </a>
+                        ) : (
+                          <span className="text-slate-500 text-sm">لا يوجد</span>
+                        )}
+                      </td>
+                      <td className="p-4">
                         <span
                           className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                             isPast
@@ -645,9 +692,29 @@ export default function ReservationsClient({
                             : res.status === "CONFIRMED"
                             ? "مؤكد"
                             : res.status === "PENDING"
-                            ? "قيد الانتظار"
+                            ? "قيد المراجعة"
                             : "ملغي"}
                         </span>
+                      </td>
+                      <td className="p-4">
+                        {!isPast && res.status === "PENDING" && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleStatusChange(res.id, "CONFIRMED")}
+                              className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-lg transition-colors"
+                              title="تأكيد الحجز"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleStatusChange(res.id, "CANCELLED")}
+                              className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors"
+                              title="رفض الحجز"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

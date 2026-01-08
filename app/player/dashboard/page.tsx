@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { Button } from '../../components/ui/button';
-import { Calendar, Clock, MapPin, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, CheckCircle, AlertCircle, XCircle, Phone, User as UserIcon, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import Link from 'next/link';
@@ -32,7 +32,18 @@ export default async function PlayerDashboard() {
       reservations: {
         include: { 
           field: {
-            include: { court: true }
+            include: { 
+              court: {
+                include: {
+                  owner: {
+                    select: {
+                      name: true,
+                      phone: true,
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         orderBy: { startTime: 'desc' }
@@ -70,60 +81,107 @@ export default async function PlayerDashboard() {
                 الحجوزات القادمة
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {upcoming.length > 0 ? upcoming.map(res => {
-                    let images: string[] = [];
-                    try { images = JSON.parse(res.field.court.images || '[]'); } catch {}
-                    const img = images[0] || 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=400';
+            {upcoming.length > 0 ? (
+                <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                    {upcoming.map((res, index) => {
+                        let images: string[] = [];
+                        try { images = JSON.parse(res.field.court.images || '[]'); } catch {}
+                        const img = images[0] || 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=400';
 
-                    // Calculate hours
-                    const hours = Math.round((new Date(res.endTime).getTime() - new Date(res.startTime).getTime()) / (1000 * 60 * 60));
+                        // Calculate hours
+                        const hours = Math.round((new Date(res.endTime).getTime() - new Date(res.startTime).getTime()) / (1000 * 60 * 60));
+                        
+                        // Status styling
+                        const statusConfig = {
+                          PENDING: { label: 'قيد المراجعة', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: AlertCircle },
+                          CONFIRMED: { label: 'مؤكد', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle },
+                          CANCELLED: { label: 'ملغي', color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: XCircle },
+                        };
+                        const status = statusConfig[res.status as keyof typeof statusConfig] || statusConfig.PENDING;
+                        const StatusIcon = status.icon;
 
-                    return (
-                        <div key={res.id} className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex gap-6 hover:border-emerald-500/30 transition-colors">
-                            <div className="w-24 h-24 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0">
-                                 <img 
-                                    src={img}
-                                    className="w-full h-full object-cover"
-                                    alt={res.field.court.name}
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-white text-lg mb-1">{res.field.court.name}</h3>
-                                <p className="text-emerald-400 text-sm mb-2">{res.field.name}</p>
-                                <div className="space-y-1 text-sm text-slate-400">
-                                    <p className="flex items-center gap-2">
-                                        <Calendar className="w-4 h-4 text-emerald-500"/> 
-                                        {format(new Date(res.startTime), 'EEEE, d MMMM', { locale: arSA })}
-                                    </p>
-                                    <p className="flex items-center gap-2">
-                                        <Clock className="w-4 h-4 text-emerald-500"/> 
-                                        {formatTime12h(new Date(res.startTime))} - {formatTime12h(new Date(res.endTime))}
+                        return (
+                            <div 
+                                key={res.id} 
+                                className={`flex items-center gap-4 p-4 hover:bg-slate-800/50 transition-colors ${
+                                    index !== upcoming.length - 1 ? 'border-b border-slate-800' : ''
+                                }`}
+                            >
+                                {/* Image */}
+                                <div className="w-20 h-20 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0">
+                                    <img 
+                                        src={img}
+                                        className="w-full h-full object-cover"
+                                        alt={res.field.court.name}
+                                    />
+                                </div>
+                                
+                                {/* Court & Field Info */}
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-white text-lg mb-1 truncate">{res.field.court.name}</h3>
+                                    <p className="text-emerald-400 text-sm mb-2">{res.field.name}</p>
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
+                                        <span className="flex items-center gap-1">
+                                            <Calendar className="w-3.5 h-3.5 text-slate-500"/> 
+                                            {format(new Date(res.startTime), 'd MMM', { locale: arSA })}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <Clock className="w-3.5 h-3.5 text-slate-500"/> 
+                                            {formatTime12h(new Date(res.startTime))} - {formatTime12h(new Date(res.endTime))}
+                                        </span>
                                         <span className="text-slate-500">({hours} ساعة)</span>
-                                    </p>
-                                    <p className="flex items-center gap-2">
-                                        <MapPin className="w-4 h-4 text-emerald-500"/> 
-                                        {res.field.court.location}
-                                    </p>
+                                    </div>
+                                </div>
+                                
+                                {/* Status */}
+                                <div className="flex-shrink-0">
+                                    <span className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full font-medium border ${status.color}`}>
+                                        <StatusIcon className="w-4 h-4" />
+                                        {status.label}
+                                    </span>
+                                </div>
+                                
+                                {/* Price */}
+                                <div className="flex-shrink-0 text-left min-w-[100px]">
+                                    <p className="text-emerald-400 font-bold text-lg">{res.totalPrice} ج.م</p>
+                                    <p className="text-slate-500 text-xs">المبلغ الكلي</p>
+                                </div>
+                                
+                                {/* Owner Contact & Payment Proof */}
+                                <div className="flex-shrink-0 flex items-center gap-2">
+                                    {res.field.court.owner.phone && (
+                                        <a 
+                                            href={`tel:${res.field.court.owner.phone}`}
+                                            className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                                            title={`اتصل بـ ${res.field.court.owner.name}`}
+                                        >
+                                            <Phone className="w-4 h-4 text-slate-400" />
+                                        </a>
+                                    )}
+                                    {res.paymentProof && (
+                                        <a 
+                                            href={res.paymentProof} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                                            title="عرض إثبات الدفع"
+                                        >
+                                            <ImageIcon className="w-4 h-4 text-emerald-400" />
+                                        </a>
+                                    )}
                                 </div>
                             </div>
-                            <div className="flex flex-col justify-between items-end">
-                                 <span className="bg-emerald-500/10 text-emerald-500 text-xs px-2 py-1 rounded-full font-medium border border-emerald-500/20">
-                                    {res.status === 'CONFIRMED' ? 'مؤكد' : res.status === 'PENDING' ? 'قيد الانتظار' : 'ملغي'}
-                                 </span>
-                                 <span className="text-emerald-400 font-bold">{res.totalPrice} ج.م</span>
-                            </div>
-                        </div>
-                    );
-                }) : (
-                    <div className="col-span-full bg-slate-900/50 p-8 rounded-xl text-center text-slate-500 border border-slate-800 border-dashed">
-                        <p className="mb-4">لا توجد حجوزات قادمة.</p>
-                        <Link href="/explore">
-                            <Button variant="outline">تصفح الملاعب</Button>
-                        </Link>
-                    </div>
-                )}
-            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="bg-slate-900/50 p-8 rounded-xl text-center text-slate-500 border border-slate-800 border-dashed">
+                    <p className="mb-4">لا توجد حجوزات قادمة.</p>
+                    <Link href="/explore">
+                        <Button variant="outline">تصفح الملاعب</Button>
+                    </Link>
+                </div>
+            )}
         </div>
 
         {/* Past */}
@@ -133,29 +191,36 @@ export default async function PlayerDashboard() {
                     <CheckCircle className="w-5 h-5 text-slate-500" />
                     الحجوزات السابقة
                 </h2>
-                 <div className="space-y-4">
-                    {past.map(res => {
+                <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                    {past.map((res, index) => {
                         let images: string[] = [];
                         try { images = JSON.parse(res.field.court.images || '[]'); } catch {}
                         const img = images[0] || 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=400';
+                        const hours = Math.round((new Date(res.endTime).getTime() - new Date(res.startTime).getTime()) / (1000 * 60 * 60));
                         
                         return (
-                            <div key={res.id} className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 flex items-center justify-between opacity-75">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-slate-800 rounded flex-shrink-0 overflow-hidden">
-                                        <img 
-                                            src={img}
-                                            className="w-full h-full object-cover"
-                                            alt={res.field.court.name}
-                                        />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-300">{res.field.court.name}</h4>
-                                        <p className="text-xs text-slate-500">{res.field.name} • {format(new Date(res.startTime), 'd MMMM yyyy', { locale: arSA })}</p>
-                                    </div>
+                            <div 
+                                key={res.id} 
+                                className={`flex items-center gap-4 p-4 opacity-60 hover:opacity-80 transition-opacity ${
+                                    index !== past.length - 1 ? 'border-b border-slate-800' : ''
+                                }`}
+                            >
+                                <div className="w-16 h-16 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0">
+                                    <img 
+                                        src={img}
+                                        className="w-full h-full object-cover"
+                                        alt={res.field.court.name}
+                                    />
                                 </div>
-                                <div className="text-left">
-                                    <span className="text-slate-400 text-sm">{res.totalPrice} ج.م</span>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-bold text-slate-300 truncate">{res.field.court.name}</h4>
+                                    <p className="text-slate-500 text-sm">
+                                        {res.field.name} • {format(new Date(res.startTime), 'd MMM yyyy', { locale: arSA })}
+                                    </p>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                    <p className="text-slate-400 font-medium">{res.totalPrice} ج.م</p>
+                                    <p className="text-slate-600 text-xs">{hours} ساعة</p>
                                 </div>
                             </div>
                         );

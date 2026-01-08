@@ -49,23 +49,31 @@ export default function AdminUsersPage() {
   const [formLoading, setFormLoading] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
-  }, [filter]);
+    let isMounted = true;
 
-  const fetchUsers = async () => {
-    try {
-      const url = filter ? `/api/admin/users?role=${filter}` : "/api/admin/users";
-      const res = await fetch(url);
-      const data = await res.json();
-      if (res.ok) {
-        setUsers(data.users);
+    const fetchUsers = async () => {
+      try {
+        const url = filter ? `/api/admin/users?role=${filter}` : "/api/admin/users";
+        const res = await fetch(url);
+        const data = await res.json();
+        if (res.ok && isMounted) {
+          setUsers(data.users);
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchUsers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [filter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +111,14 @@ export default function AdminUsersPage() {
       setShowModal(false);
       setEditingUser(null);
       setFormData({ email: "", password: "", name: "", phone: "", role: "OWNER" });
-      fetchUsers();
+      
+      // Refetch users
+      const url = filter ? `/api/admin/users?role=${filter}` : "/api/admin/users";
+      const res = await fetch(url);
+      const data = await res.json();
+      if (res.ok) {
+        setUsers(data.users);
+      }
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "حدث خطأ");
     } finally {
@@ -131,7 +146,13 @@ export default function AdminUsersPage() {
         method: "DELETE",
       });
       if (res.ok) {
-        fetchUsers();
+        // Refetch users
+        const url = filter ? `/api/admin/users?role=${filter}` : "/api/admin/users";
+        const fetchRes = await fetch(url);
+        const data = await fetchRes.json();
+        if (fetchRes.ok) {
+          setUsers(data.users);
+        }
       }
     } catch (error) {
       console.error("Error deleting user:", error);

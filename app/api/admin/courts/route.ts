@@ -11,6 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
     }
 
+    // Fetch courts with optimized single query
     const courts = await prisma.court.findMany({
       include: {
         owner: {
@@ -27,46 +28,52 @@ export async function GET() {
             name: true,
             type: true,
             pricePerHour: true,
+            reservations: {
+              where: { status: "CONFIRMED" },
+              select: {
+                totalPrice: true,
+              },
+            },
             _count: {
               select: { reservations: true },
             },
           },
         },
-        _count: {
-          select: { fields: true },
-        },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // Calculate stats for each court
-    const courtsWithStats = await Promise.all(
-      courts.map(async (court) => {
-        const fieldIds = court.fields.map((f) => f.id);
-        
-        const [totalReservations, revenue] = await Promise.all([
-          prisma.reservation.count({
-            where: {
-              fieldId: { in: fieldIds },
-              status: "CONFIRMED",
-            },
-          }),
-          prisma.reservation.aggregate({
-            _sum: { totalPrice: true },
-            where: {
-              fieldId: { in: fieldIds },
-              status: "CONFIRMED",
-            },
-          }),
-        ]);
+    // Calculate stats in memory (much faster than separate DB queries)
+    const courtsWithStats = courts.map((court) => {
+      let totalReservations = 0;
+      let totalRevenue = 0;
 
-        return {
-          ...court,
-          totalReservations,
-          totalRevenue: revenue._sum.totalPrice || 0,
-        };
-      })
-    );
+      court.fields.forEach((field) => {
+        totalReservations += field.reservations.length;
+        field.reservations.forEach((res) => {
+          totalRevenue += res.totalPrice;
+        });
+      });
+
+      return {
+        id: court.id,
+        name: court.name,
+        description: court.description,
+        location: court.location,
+        images: court.images,
+        createdAt: court.createdAt,
+        owner: court.owner,
+        fields: court.fields.map((f) => ({
+          id: f.id,
+          name: f.name,
+          type: f.type,
+          pricePerHour: f.pricePerHour,
+          _count: f._count,
+        })),
+        totalReservations,
+        totalRevenue,
+      };
+    });
 
     return NextResponse.json({ courts: courtsWithStats });
   } catch (error) {

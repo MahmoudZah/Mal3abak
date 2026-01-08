@@ -22,6 +22,10 @@ interface CourtData {
   latitude: number | null;
   longitude: number | null;
   images: string;
+  paymentName: string | null;
+  paymentPhone: string | null;
+  paymentMethod: string | null;
+  serviceFee: number;
   fields: { id: string; name: string; type: string; pricePerHour: number }[];
 }
 
@@ -42,6 +46,10 @@ export default function EditCourtPage() {
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [paymentName, setPaymentName] = useState('');
+  const [paymentPhone, setPaymentPhone] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Instapay');
+  const [serviceFee, setServiceFee] = useState('10');
   const [fields, setFields] = useState<FieldInput[]>([]);
 
   // Fetch court data
@@ -65,6 +73,11 @@ export default function EditCourtPage() {
         } catch {
           setImageUrl('');
         }
+
+        setPaymentName(court.paymentName || '');
+        setPaymentPhone(court.paymentPhone || '');
+        setPaymentMethod(court.paymentMethod || 'Instapay');
+        setServiceFee(court.serviceFee?.toString() || '10');
 
         setFields(court.fields.map(f => ({
           id: f.id,
@@ -150,6 +163,10 @@ export default function EditCourtPage() {
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
           images: imageUrl ? [imageUrl] : [],
+          paymentName,
+          paymentPhone,
+          paymentMethod,
+          serviceFee: parseFloat(serviceFee),
           fields: fields.map(f => ({
             id: f.isNew ? undefined : f.id,
             name: f.name,
@@ -311,6 +328,73 @@ export default function EditCourtPage() {
                   dir="ltr"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Payment Details */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
+            <div>
+              <h2 className="text-lg font-bold text-white mb-1">تفاصيل الدفع</h2>
+              <p className="text-slate-400 text-sm">سيتم عرض هذه المعلومات للاعبين لإتمام عملية الدفع</p>
+            </div>
+
+            <div>
+              <label className="block text-slate-400 text-sm mb-2">اسم المستلم (للدفع) *</label>
+              <input
+                type="text"
+                value={paymentName}
+                onChange={(e) => setPaymentName(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                placeholder="مثال: محمد أحمد"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-400 text-sm mb-2">رقم الهاتف (للدفع) *</label>
+              <input
+                type="tel"
+                value={paymentPhone}
+                onChange={(e) => setPaymentPhone(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                placeholder="مثال: 01012345678"
+                required
+                dir="ltr"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-400 text-sm mb-2">طريقة الدفع *</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-emerald-500"
+                required
+              >
+                <option value="Instapay">Instapay</option>
+                <option value="Vodafone Cash">Vodafone Cash</option>
+                <option value="Etisalat Cash">Etisalat Cash</option>
+                <option value="Orange Cash">Orange Cash</option>
+                <option value="Bank Transfer">تحويل بنكي</option>
+                <option value="Other">أخرى</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-400 text-sm mb-2">رسوم الخدمة لكل حجز (ج.م) *</label>
+              <input
+                type="number"
+                value={serviceFee}
+                onChange={(e) => setServiceFee(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                placeholder="10"
+                min="0"
+                step="0.01"
+                required
+              />
+              <p className="text-slate-500 text-xs mt-2">
+                هذا المبلغ سيضاف على سعر الملعب عند الحجز
+              </p>
             </div>
           </div>
 

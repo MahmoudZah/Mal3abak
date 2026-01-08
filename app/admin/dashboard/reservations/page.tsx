@@ -28,25 +28,33 @@ export default function AdminReservationsPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    fetchReservations();
-  }, [statusFilter]);
+    let isMounted = true;
 
-  const fetchReservations = async () => {
-    try {
-      const url = statusFilter
-        ? `/api/admin/reservations?status=${statusFilter}`
-        : "/api/admin/reservations";
-      const res = await fetch(url);
-      const data = await res.json();
-      if (res.ok) {
-        setReservations(data.reservations);
+    const fetchReservations = async () => {
+      try {
+        const url = statusFilter
+          ? `/api/admin/reservations?status=${statusFilter}`
+          : "/api/admin/reservations";
+        const res = await fetch(url);
+        const data = await res.json();
+        if (res.ok && isMounted) {
+          setReservations(data.reservations);
+        }
+      } catch (error) {
+        console.error("Error fetching reservations:", error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("Error fetching reservations:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchReservations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [statusFilter]);
 
   const filteredReservations = reservations.filter(
     (res) =>

@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '../../../components/ui/button';
-import { ArrowRight, MapPin, FileText, Image as ImageIcon, Plus, Trash2, Navigation, ExternalLink } from 'lucide-react';
+import { ArrowRight, MapPin, FileText, Plus, Trash2, Navigation, ExternalLink } from 'lucide-react';
+import { GOVERNORATES, getRegionsByGovernorate } from '@/lib/locations';
+import { ImageUpload } from '@/app/components/ImageUpload';
 
 interface FieldInput {
   name: string;
@@ -17,16 +19,35 @@ export default function NewCourtPage() {
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [governorate, setGovernorate] = useState('cairo');
+  const [region, setRegion] = useState('');
   const [location, setLocation] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  
+  // Payment details
+  const [paymentName, setPaymentName] = useState('');
+  const [paymentPhone, setPaymentPhone] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('InstaPay');
+  
   const [fields, setFields] = useState<FieldInput[]>([
     { name: 'ملعب خماسي', type: '5v5', pricePerHour: '200' }
   ]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
+
+  // Get available regions based on selected governorate
+  const availableRegions = getRegionsByGovernorate(governorate);
+
+  // Set first region as default when governorate changes
+  useEffect(() => {
+    const regions = getRegionsByGovernorate(governorate);
+    if (regions.length > 0 && !region) {
+      setRegion(regions[0].id);
+    }
+  }, [governorate, region]);
 
   const addField = () => {
     setFields([...fields, { name: '', type: '5v5', pricePerHour: '' }]);
@@ -85,6 +106,16 @@ export default function NewCourtPage() {
       return;
     }
 
+    if (!region) {
+      setError('يرجى اختيار المنطقة');
+      return;
+    }
+
+    if (!paymentName || !paymentPhone) {
+      setError('يرجى إضافة بيانات الدفع (الاسم ورقم الهاتف)');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -94,10 +125,15 @@ export default function NewCourtPage() {
         body: JSON.stringify({
           name,
           description,
+          governorate,
+          region,
           location,
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
-          images: imageUrl ? [imageUrl] : [],
+          images: images,
+          paymentName,
+          paymentPhone,
+          paymentMethod,
           fields: fields.map(f => ({
             name: f.name,
             type: f.type,
@@ -151,8 +187,47 @@ export default function NewCourtPage() {
                 />
               </div>
 
+              {/* Governorate and Region */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">المحافظة *</label>
+                  <select
+                    value={governorate}
+                    onChange={(e) => {
+                      setGovernorate(e.target.value);
+                      setRegion(''); // Reset region when governorate changes
+                    }}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    required
+                  >
+                    {GOVERNORATES.map((gov) => (
+                      <option key={gov.id} value={gov.id}>
+                        {gov.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">المنطقة *</label>
+                  <select
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    required
+                  >
+                    <option value="">اختر المنطقة</option>
+                    {availableRegions.map((reg) => (
+                      <option key={reg.id} value={reg.id}>
+                        {reg.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">الموقع (العنوان) *</label>
+                <label className="block text-slate-300 text-sm font-medium mb-2">العنوان التفصيلي (اختياري)</label>
                 <div className="relative">
                   <MapPin className="absolute right-3 top-3 w-5 h-5 text-slate-500" />
                   <input
@@ -160,8 +235,7 @@ export default function NewCourtPage() {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pr-12 pl-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                    placeholder="مثال: القاهرة - مدينة نصر"
-                    required
+                    placeholder="مثال: شارع النصر، بجوار مول X"
                   />
                 </div>
               </div>
@@ -243,18 +317,69 @@ export default function NewCourtPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 text-sm font-medium mb-2">رابط صورة النادي</label>
-                <div className="relative">
-                  <ImageIcon className="absolute right-3 top-3 w-5 h-5 text-slate-500" />
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pr-12 pl-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                    placeholder="https://example.com/image.jpg"
-                    dir="ltr"
-                  />
-                </div>
+                <label className="block text-slate-300 text-sm font-medium mb-2">صور النادي</label>
+                <ImageUpload images={images} onChange={setImages} maxImages={5} />
+              </div>
+            </div>
+
+            {/* Payment Info */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1">بيانات الدفع</h2>
+                <p className="text-slate-400 text-sm">
+                  سيستخدم اللاعبون هذه البيانات لتحويل قيمة الحجز + 10 ج.م رسوم خدمة
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 text-sm font-medium mb-2">
+                  الاسم المستخدم في الدفع *
+                </label>
+                <input
+                  type="text"
+                  value={paymentName}
+                  onChange={(e) => setPaymentName(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  placeholder="الاسم كما يظهر في InstaPay/Vodafone Cash"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 text-sm font-medium mb-2">
+                  رقم الهاتف للتحويل *
+                </label>
+                <input
+                  type="tel"
+                  value={paymentPhone}
+                  onChange={(e) => setPaymentPhone(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  placeholder="01xxxxxxxxx"
+                  dir="ltr"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 text-sm font-medium mb-2">
+                  طريقة الدفع *
+                </label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  required
+                >
+                  <option value="InstaPay">InstaPay</option>
+                  <option value="Vodafone Cash">Vodafone Cash</option>
+                  <option value="Both">كلاهما (InstaPay & Vodafone Cash)</option>
+                </select>
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <p className="text-blue-400 text-sm">
+                  💡 <strong>ملحوظة:</strong> سيتم إضافة 10 ج.م رسوم خدمة على كل حجز (رسوم المنصة)
+                </p>
               </div>
             </div>
 

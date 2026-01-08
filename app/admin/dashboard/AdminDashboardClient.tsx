@@ -64,24 +64,32 @@ export function AdminDashboardClient() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      const res = await fetch("/api/admin/stats");
-      const data = await res.json();
-      if (res.ok) {
-        setStats(data.stats);
-        setRecentReservations(data.recentReservations);
-        setTopCourts(data.topCourts);
+    let isMounted = true;
+    
+    const fetchStats = async () => {
+      try {
+        const res = await fetch("/api/admin/stats");
+        const data = await res.json();
+        if (res.ok && isMounted) {
+          setStats(data.stats);
+          setRecentReservations(data.recentReservations);
+          setTopCourts(data.topCourts);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (loading) {
     return (

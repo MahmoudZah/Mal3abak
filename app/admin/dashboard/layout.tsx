@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
 import { AdminTabs } from "./AdminTabs";
+import { AdminLayoutClient } from "./AdminLayoutClient";
 
 export default async function AdminDashboardLayout({
   children,
@@ -45,7 +46,9 @@ export default async function AdminDashboardLayout({
       <AdminTabs />
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">{children}</main>
+      <AdminLayoutClient>
+        {children}
+      </AdminLayoutClient>
     </div>
   );
 }

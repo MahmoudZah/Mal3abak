@@ -1,11 +1,14 @@
-import { Suspense } from 'react';
-import MapPageClient from './MapPageClient';
+import { redirect } from "next/navigation";
 
-export default function MapPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>
-      <MapPageClient />
-    </Suspense>
-  );
+export const dynamic = "force-dynamic";
+
+interface MapPageProps {
+  searchParams: Promise<{ search?: string }>;
 }
 
+export default async function MapPage({ searchParams }: MapPageProps) {
+  const { search } = await searchParams;
+  const q = (search || "").trim();
+  if (!q) redirect("/browse");
+  redirect(`/browse?search=${encodeURIComponent(q)}`);
+}

@@ -58,7 +58,7 @@ export function Navbar() {
             ملعبك
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
-            <Link href="/map" className="hover:text-emerald-400 transition-colors">
+            <Link href="/browse" className="hover:text-emerald-400 transition-colors">
               تصفح الملاعب
             </Link>
           </div>
@@ -153,7 +153,7 @@ export function Navbar() {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-slate-900 border-t border-slate-800 p-4 space-y-3">
-          <Link href="/map" className="block py-2 text-slate-300 hover:text-emerald-400">
+          <Link href="/browse" className="block py-2 text-slate-300 hover:text-emerald-400">
             تصفح الملاعب
           </Link>
           {user ? (

@@ -70,7 +70,9 @@ async function main() {
       name: "نادي الشمس الرياضي",
       description:
         "نادي رياضي متكامل يضم ثلاثة ملاعب كرة قدم بمواصفات عالية. نجيل صناعي درجة أولى وإضاءة ليلية ممتازة. يتوفر موقف سيارات وكافتيريا.",
-      location: "القاهرة - مدينة نصر",
+      governorate: "cairo",
+      region: "nasr-city",
+      location: "شارع عباس العقاد",
       latitude: 30.0511,
       longitude: 31.3656,
       images: JSON.stringify([
@@ -113,7 +115,9 @@ async function main() {
     data: {
       name: "ملعب الأبطال",
       description: "ملعب حديث ومجهز بأفضل المعدات. نجيل طبيعي عالي الجودة.",
-      location: "القاهرة - المعادي",
+      governorate: "cairo",
+      region: "maadi",
+      location: "شارع النصر الرئيسي",
       latitude: 29.9602,
       longitude: 31.2569,
       images: JSON.stringify([
@@ -147,7 +151,9 @@ async function main() {
       name: "ستاد الحرية",
       description:
         "ملعب خماسي مغطى مكيف الهواء. مناسب للعب في جميع الأوقات والفصول.",
-      location: "الجيزة - الدقي",
+      governorate: "giza",
+      region: "dokki-giza",
+      location: "شارع المساحة",
       latitude: 30.0388,
       longitude: 31.209,
       images: JSON.stringify([
@@ -171,7 +177,9 @@ async function main() {
     data: {
       name: "ملعب الشباب",
       description: "ملعب اقتصادي للشباب. نجيل صناعي جيد وإضاءة كافية.",
-      location: "القاهرة - شبرا",
+      governorate: "cairo",
+      region: "shoubra",
+      location: "شارع شبرا الرئيسي",
       latitude: 30.0891,
       longitude: 31.2445,
       images: JSON.stringify([

@@ -36,22 +36,30 @@ export default function AdminCourtsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchCourts();
-  }, []);
+    let isMounted = true;
 
-  const fetchCourts = async () => {
-    try {
-      const res = await fetch("/api/admin/courts");
-      const data = await res.json();
-      if (res.ok) {
-        setCourts(data.courts);
+    const fetchCourts = async () => {
+      try {
+        const res = await fetch("/api/admin/courts");
+        const data = await res.json();
+        if (res.ok && isMounted) {
+          setCourts(data.courts);
+        }
+      } catch (error) {
+        console.error("Error fetching courts:", error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("Error fetching courts:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchCourts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (loading) {
     return (

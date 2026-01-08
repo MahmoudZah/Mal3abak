@@ -16,12 +16,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
     }
 
-    const { name, description, location, latitude, longitude, images, fields } =
+    const { name, description, governorate, region, location, latitude, longitude, images, paymentName, paymentPhone, paymentMethod, fields } =
       await request.json();
 
-    if (!name || !location) {
+    if (!name || !governorate || !region) {
       return NextResponse.json(
-        { error: "اسم النادي والموقع مطلوبان" },
+        { error: "اسم النادي والمحافظة والمنطقة مطلوبان" },
+        { status: 400 }
+      );
+    }
+
+    if (!paymentName || !paymentPhone || !paymentMethod) {
+      return NextResponse.json(
+        { error: "بيانات الدفع مطلوبة" },
         { status: 400 }
       );
     }
@@ -33,15 +40,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create court with fields (no time slots needed anymore)
+    // Create court with fields
     const court = await prisma.court.create({
       data: {
         name,
         description: description || null,
-        location,
+        governorate,
+        region,
+        location: location || null,
         latitude: latitude || null,
         longitude: longitude || null,
         images: JSON.stringify(images || []),
+        paymentName,
+        paymentPhone,
+        paymentMethod,
         ownerId: user.id,
         fields: {
           create: (fields as FieldInput[]).map((field) => ({
@@ -78,19 +90,26 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
+    const governorate = searchParams.get("governorate") || "";
+    const region = searchParams.get("region") || "";
 
     const courts = await prisma.court.findMany({
-      where: search
-        ? {
-            OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { location: { contains: search, mode: "insensitive" } },
-            ],
-          }
-        : undefined,
+      where: {
+        ...(search && {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { governorate: { contains: search, mode: "insensitive" } },
+            { region: { contains: search, mode: "insensitive" } },
+          ],
+        }),
+        ...(governorate && { governorate }),
+        ...(region && { region }),
+      },
       select: {
         id: true,
         name: true,
+        governorate: true,
+        region: true,
         location: true,
         latitude: true,
         longitude: true,

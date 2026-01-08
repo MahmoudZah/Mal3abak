@@ -13,17 +13,25 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500); // Cap at 500 for performance
 
     const reservations = await prisma.reservation.findMany({
       where: status ? { status } : undefined,
       take: limit,
-      include: {
+      select: {
+        id: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+        totalPrice: true,
+        createdAt: true,
+        visitorName: true,
+        visitorPhone: true,
         field: {
-          include: {
+          select: {
+            name: true,
             court: {
               select: {
-                id: true,
                 name: true,
                 location: true,
                 owner: {

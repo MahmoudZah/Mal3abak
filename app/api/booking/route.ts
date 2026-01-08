@@ -5,12 +5,20 @@ import { getCurrentUser } from "@/lib/auth";
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
-    const { fieldId, date, slots, visitorName, visitorPhone } =
+    const { fieldId, date, slots, visitorName, visitorPhone, paymentProof } =
       await request.json();
 
     if (!fieldId || !date || !slots || slots.length === 0) {
       return NextResponse.json(
         { error: "بيانات الحجز غير مكتملة" },
+        { status: 400 }
+      );
+    }
+
+    // Payment proof is required
+    if (!paymentProof) {
+      return NextResponse.json(
+        { error: "يرجى إرفاق إثبات الدفع" },
         { status: 400 }
       );
     }
@@ -44,7 +52,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse date and slots to create start/end times
-    const bookingDate = new Date(date);
+    // IMPORTANT: Parse date in local timezone to avoid UTC conversion issues
+    const [year, month, day] = date.split('-').map(Number);
+    const bookingDate = new Date(year, month - 1, day); // Month is 0-indexed
     const sortedSlots = [...slots].sort((a: number, b: number) => a - b);
 
     const startTime = new Date(bookingDate);
@@ -84,10 +94,12 @@ export async function POST(request: NextRequest) {
         throw new Error("الموعد المختار محجوز بالفعل");
       }
 
-      // Calculate total price
-      const totalPrice = slots.length * field.pricePerHour;
+      // Calculate total price (field price + service fee)
+      const serviceFee = 10; // 10 EGP service fee
+      const fieldPrice = slots.length * field.pricePerHour;
+      const totalPrice = fieldPrice + serviceFee;
 
-      // Create reservation
+      // Create reservation with PENDING status (owner needs to confirm)
       return tx.reservation.create({
         data: {
           userId: user?.id || null,
@@ -96,8 +108,10 @@ export async function POST(request: NextRequest) {
           fieldId: fieldId,
           startTime: startTime,
           endTime: endTime,
-          status: "CONFIRMED",
+          status: "PENDING", // Changed to PENDING - owner must confirm
           totalPrice: totalPrice,
+          serviceFee: serviceFee,
+          paymentProof: paymentProof,
         },
         include: {
           field: {

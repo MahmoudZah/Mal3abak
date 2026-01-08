@@ -22,7 +22,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Get date range for the requested date
-    const date = dateParam ? new Date(dateParam) : new Date();
+    // IMPORTANT: Parse date in local timezone to avoid UTC conversion issues
+    let date: Date;
+    if (dateParam) {
+      const [year, month, day] = dateParam.split('-').map(Number);
+      date = new Date(year, month - 1, day); // Month is 0-indexed
+    } else {
+      date = new Date();
+    }
+    
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
 

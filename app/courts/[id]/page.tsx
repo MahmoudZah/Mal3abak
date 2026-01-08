@@ -145,7 +145,13 @@ export default async function CourtDetailsPage({
 
         {/* Right: Booking Panel */}
         <div className="lg:col-span-1">
-          <BookingPanel court={court} fields={court.fields} />
+          <BookingPanel 
+            court={court} 
+            fields={court.fields}
+            paymentName={court.paymentName || ''}
+            paymentPhone={court.paymentPhone || ''}
+            paymentMethod={court.paymentMethod || ''}
+          />
         </div>
       </div>
 

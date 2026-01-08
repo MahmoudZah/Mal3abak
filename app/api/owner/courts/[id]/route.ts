@@ -75,7 +75,7 @@ export async function PUT(
       return NextResponse.json({ error: "غير موجود" }, { status: 404 });
     }
 
-    const { name, description, location, latitude, longitude, images, fields } =
+    const { name, description, location, latitude, longitude, images, paymentName, paymentPhone, paymentMethod, serviceFee, fields } =
       await request.json();
 
     // Update court
@@ -88,6 +88,10 @@ export async function PUT(
         latitude: latitude || null,
         longitude: longitude || null,
         images: JSON.stringify(images || []),
+        paymentName: paymentName || null,
+        paymentPhone: paymentPhone || null,
+        paymentMethod: paymentMethod || null,
+        serviceFee: serviceFee || 10,
       },
     });
 

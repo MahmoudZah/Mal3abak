@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "../../components/ui/button";
+import { PaymentConfirmationModal } from "../../components/PaymentConfirmationModal";
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -30,6 +31,9 @@ interface Court {
 interface BookingPanelProps {
   court: Court;
   fields: Field[];
+  paymentName: string;
+  paymentPhone: string;
+  paymentMethod: string;
 }
 
 interface UserData {
@@ -54,7 +58,7 @@ function formatTime12h(hour: number): string {
   return `${hour12}:00 ${period}`;
 }
 
-export function BookingPanel({ court, fields }: BookingPanelProps) {
+export function BookingPanel({ court, fields, paymentName, paymentPhone, paymentMethod }: BookingPanelProps) {
   const [selectedField, setSelectedField] = useState<string | null>(
     fields[0]?.id || null
   );
@@ -66,6 +70,7 @@ export function BookingPanel({ court, fields }: BookingPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Guest booking fields
   const [user, setUser] = useState<UserData | null>(null);
@@ -173,8 +178,21 @@ export function BookingPanel({ court, fields }: BookingPanelProps) {
 
   const handleBook = async () => {
     if (selectedSlots.length === 0) return;
+    
+    // Validate guest info
+    if (!user && (!visitorName || !visitorPhone)) {
+      setError("يرجى إدخال الاسم ورقم الهاتف");
+      return;
+    }
+
+    // Open payment modal
     setError(null);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentConfirm = async (paymentProofUrl: string) => {
     setLoading(true);
+    setError(null);
 
     try {
       const response = await fetch("/api/booking", {
@@ -186,6 +204,7 @@ export function BookingPanel({ court, fields }: BookingPanelProps) {
           slots: selectedSlots,
           visitorName: user ? null : visitorName,
           visitorPhone: user ? null : visitorPhone,
+          paymentProof: paymentProofUrl,
         }),
       });
 
@@ -197,8 +216,10 @@ export function BookingPanel({ court, fields }: BookingPanelProps) {
 
       setBookingId(data.reservation.id);
       setIsBooked(true);
+      setShowPaymentModal(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "حدث خطأ في الحجز");
+      setShowPaymentModal(false);
     } finally {
       setLoading(false);
     }
@@ -210,13 +231,20 @@ export function BookingPanel({ court, fields }: BookingPanelProps) {
         <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
           <CheckCircle className="w-8 h-8 text-white" />
         </div>
-        <h3 className="text-2xl font-bold text-white mb-2">تم الحجز بنجاح!</h3>
+        <h3 className="text-2xl font-bold text-white mb-2">تم إرسال طلب الحجز!</h3>
         <p className="text-slate-300 mb-2">رقم الحجز:</p>
         <p className="text-emerald-400 font-mono text-sm mb-4 bg-slate-800 inline-block px-3 py-1 rounded">
           {bookingId}
         </p>
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
+          <p className="text-blue-400 text-sm">
+            ⏳ <strong>في انتظار التأكيد</strong>
+            <br />
+            سيقوم مالك الملعب بمراجعة إثبات الدفع وتأكيد حجزك قريباً
+          </p>
+        </div>
         <p className="text-slate-400 text-sm mb-6">
-          {selectedSlots.length} ساعة • {totalPrice} ج.م
+          {selectedSlots.length} ساعة • {totalPrice + 10} ج.م
         </p>
         <Button variant="outline" onClick={() => window.location.reload()}>
           حجز موعد آخر
@@ -389,9 +417,19 @@ export function BookingPanel({ court, fields }: BookingPanelProps) {
       )}
 
       <div className="mt-6 pt-6 border-t border-slate-800">
-        <div className="flex justify-between items-center mb-4 text-slate-300">
-          <span>الإجمالي ({selectedSlots.length} ساعة)</span>
-          <span className="text-xl font-bold text-white">{totalPrice} ج.م</span>
+        <div className="space-y-2 mb-4">
+          <div className="flex justify-between items-center text-slate-300">
+            <span>سعر الملعب ({selectedSlots.length} ساعة)</span>
+            <span className="text-white">{totalPrice} ج.م</span>
+          </div>
+          <div className="flex justify-between items-center text-slate-300">
+            <span>رسوم الخدمة</span>
+            <span className="text-emerald-400">+10 ج.م</span>
+          </div>
+          <div className="flex justify-between items-center text-lg font-bold border-t border-slate-700 pt-2">
+            <span className="text-white">المجموع</span>
+            <span className="text-emerald-500">{totalPrice + 10} ج.م</span>
+          </div>
         </div>
         <Button
           className="w-full h-12 text-lg"
@@ -402,9 +440,27 @@ export function BookingPanel({ court, fields }: BookingPanelProps) {
           onClick={handleBook}
           isLoading={loading}
         >
-          {selectedSlots.length > 0 ? "تأكيد الحجز" : "اختر وقتاً للحجز"}
+          {selectedSlots.length > 0 ? "متابعة للدفع" : "اختر وقتاً للحجز"}
         </Button>
       </div>
+
+      {/* Payment Confirmation Modal */}
+      {showPaymentModal && currentField && (
+        <PaymentConfirmationModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onConfirm={handlePaymentConfirm}
+          courtName={court.name}
+          fieldName={currentField.name}
+          date={format(selectedDate, "EEEE, d MMMM yyyy", { locale: arSA })}
+          time={`${formatTime12h(selectedSlots[0])} - ${formatTime12h(selectedSlots[selectedSlots.length - 1] + 1)}`}
+          hours={selectedSlots.length}
+          pricePerHour={currentField.pricePerHour}
+          ownerPaymentName={paymentName}
+          ownerPaymentPhone={paymentPhone}
+          ownerPaymentMethod={paymentMethod}
+        />
+      )}
     </div>
   );
 }

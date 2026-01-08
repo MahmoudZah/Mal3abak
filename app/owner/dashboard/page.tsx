@@ -39,9 +39,20 @@ export default async function OwnerDashboardOverview() {
 
   if (!owner) return null;
 
+  // Calculate date ranges
+  const now = new Date();
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // Start and end of current month
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
   // Calculate Stats
-  let totalRevenue = 0;
-  let totalReservations = 0;
+  let monthlyRevenue = 0;
+  let monthlyReservations = 0;
   let totalFields = 0;
   const recentReservations: Array<{
     id: string;
@@ -59,8 +70,15 @@ export default async function OwnerDashboardOverview() {
     court.fields.forEach(field => {
       totalFields++;
       field.reservations.forEach(res => {
-        totalReservations++;
-        totalRevenue += res.totalPrice;
+        const resDate = new Date(res.startTime);
+        
+        // Count monthly stats
+        if (resDate >= monthStart && resDate <= monthEnd) {
+          monthlyReservations++;
+          monthlyRevenue += res.totalPrice;
+        }
+        
+        // Collect all reservations for recent list
         recentReservations.push({
           id: res.id,
           courtName: court.name,
@@ -82,11 +100,6 @@ export default async function OwnerDashboardOverview() {
     .slice(0, 5);
 
   // Today's reservations
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  
   const todayReservations = recentReservations.filter(r => {
     const start = new Date(r.startTime);
     return start >= today && start < tomorrow;
@@ -103,10 +116,11 @@ export default async function OwnerDashboardOverview() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-400 text-sm font-medium">إجمالي الدخل</h3>
+            <h3 className="text-slate-400 text-sm font-medium">دخل الشهر</h3>
             <Wallet className="w-5 h-5 text-emerald-500" />
           </div>
-          <p className="text-2xl font-bold text-white">{totalRevenue.toLocaleString()} <span className="text-sm font-normal text-slate-500">ج.م</span></p>
+          <p className="text-2xl font-bold text-white">{monthlyRevenue.toLocaleString()} <span className="text-sm font-normal text-slate-500">ج.م</span></p>
+          <p className="text-xs text-slate-500 mt-1">{format(monthStart, 'MMMM yyyy', { locale: arSA })}</p>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
@@ -115,14 +129,16 @@ export default async function OwnerDashboardOverview() {
             <TrendingUp className="w-5 h-5 text-blue-500" />
           </div>
           <p className="text-2xl font-bold text-white">{todayReservations}</p>
+          <p className="text-xs text-slate-500 mt-1">{format(today, 'd MMMM', { locale: arSA })}</p>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-400 text-sm font-medium">إجمالي الحجوزات</h3>
+            <h3 className="text-slate-400 text-sm font-medium">حجوزات الشهر</h3>
             <Calendar className="w-5 h-5 text-purple-500" />
           </div>
-          <p className="text-2xl font-bold text-white">{totalReservations}</p>
+          <p className="text-2xl font-bold text-white">{monthlyReservations}</p>
+          <p className="text-xs text-slate-500 mt-1">{format(monthStart, 'MMMM yyyy', { locale: arSA })}</p>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
@@ -131,6 +147,7 @@ export default async function OwnerDashboardOverview() {
             <BarChart3 className="w-5 h-5 text-orange-500" />
           </div>
           <p className="text-2xl font-bold text-white">{totalFields}</p>
+          <p className="text-xs text-slate-500 mt-1">إجمالي الملاعب</p>
         </div>
       </div>
 
