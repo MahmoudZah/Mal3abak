@@ -41,6 +41,7 @@ model Court {
   paymentName      String?  // Name for payment (e.g., "أحمد محمد")
   paymentPhone     String?  // Phone for InstaPay/Vodafone Cash
   paymentMethod    String?  // e.g., "InstaPay", "Vodafone Cash", "Both"
+  serviceFee       Float    @default(10) // Service fee per booking (customizable)
   
   ownerId      String
   owner        User     @relation("OwnerCourts", fields: [ownerId], references: [id])

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Court" ADD COLUMN "serviceFee" DOUBLE PRECISION NOT NULL DEFAULT 10;
+
